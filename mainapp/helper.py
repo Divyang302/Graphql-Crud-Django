@@ -16,61 +16,64 @@ cursor = Connection.cursor()
 
 
 def create_template_and_field(**template_data):
-
     try:
-        try:
-            table_name = template_data['template_name'].replace(" ", "_")
-            table_name = table_name.lower()
-            obj = TemplateDetails(
-                template_name=table_name,
-                title=template_data['template_name']
-            )
-            obj.save()
-
-            create_table_query = f'''CREATE TABLE {table_name}(ID SERIAL PRIMARY KEY); '''
-            cursor.execute(create_table_query)
-            Connection.commit()
-        except:
-            Connection.commit()
-            e = {"error": 'Template already exist...'}
-            return e
-
-        for i in template_data['template_fields']:
-            print(i)
-            if i["type"] == "DECIMAL(15,)":
-                type = "DECIMAL(15,{})".format(int(i['decimalPoint']))
-            elif i["type"] == "CHAR()":
-                type = f"CHAR({i['maxValue']})"
-            else:
-                type = i["type"]
-
-            label = i['label'].replace(" ", "_")
-            label = label.lower()
-            field = FieldDetails(
-                label=label if label != "" else None,
-                type=type if type != "" else None,
-                maxValue=int(i["maxValue"]) if i["maxValue"] != "" else None,
-                pickList=i["pickList"] if i["pickList"] != "" else None,
-                decimalPoint=i["decimalPoint"] if i["decimalPoint"] != "" else "",
-                title=i['label'],
-                templateid=obj,
-            )
-            field.save()
+        if template_data['template_name'] != '':
             try:
+                table_name = template_data['template_name'].replace(" ", "_")
+                table_name = table_name.lower()
+                obj = TemplateDetails(
+                    template_name=table_name,
+                    title=template_data['template_name']
+                )
+                obj.save()
+                create_table_query = f'''CREATE TABLE {table_name}(ID SERIAL PRIMARY KEY); '''
+                cursor.execute(create_table_query)
+                Connection.commit()
+            except:
+                Connection.commit()
+                e = {"error": 'Template already exist...'}
+                return e
+        else:
+            e = {"error": "Template name is must be required."}
+            return e
+        for i in template_data['template_fields']:
+            if i['label'] != "":
+                print(i)
+                if i["type"] == "DECIMAL(15,)":
+                    type = "DECIMAL(15,{})".format(int(i['decimalPoint']))
+                elif i["type"] == "CHAR()":
+                    type = f"CHAR({i['maxValue']})"
+                else:
+                    type = i["type"]
                 label = i['label'].replace(" ", "_")
-                if type == "M_Json":
-                    type = "Json"
-                # if i["decimalPoint"] != "":
-                #     type = "DECIMAL(15,{})".format(int(i['decimalPoint']))
-
-                create_table_field = f"ALTER TABLE {table_name} ADD COLUMN {label}  {type} ;"
-                cursor.execute(create_table_field)
-
-            except Exception as ex:
-                if (Connection):
-                    Connection.commit()
-                    e = {"error": str(ex)}
-                    return e
+                label = label.lower()
+                field = FieldDetails(
+                    label=label if label != "" else None,
+                    type=type if type != "" else None,
+                    maxValue=int(
+                        i["maxValue"]) if i["maxValue"] != "" else None,
+                    pickList=i["pickList"] if i["pickList"] != "" else None,
+                    decimalPoint=i["decimalPoint"] if i["decimalPoint"] != "" else "",
+                    title=i['label'],
+                    templateid=obj,
+                )
+                field.save()
+                try:
+                    label = i['label'].replace(" ", "_")
+                    if type == "M_Json":
+                        type = "Json"
+                    # if i["decimalPoint"] != "":
+                    #     type = "DECIMAL(15,{})".format(int(i['decimalPoint']))
+                    create_table_field = f"ALTER TABLE {table_name} ADD COLUMN {label}  {type} ;"
+                    cursor.execute(create_table_field)
+                except Exception as ex:
+                    if (Connection):
+                        Connection.commit()
+                        e = {"error": str(ex)}
+                        return e
+            else:
+                e = {"error": "Field name is must be required."}
+                return e
         Connection.commit()
     except Exception as ex:
         Connection.commit()
